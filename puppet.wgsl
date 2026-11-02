@@ -455,15 +455,13 @@ fn upperParts(q: vec3f) -> vec2f {
 // long flowing beard hanging from the chin to a tapered point, below the mouth (the mustache covers the
 // upper lip). Rides the jaw like the goatee, so it swings with the mouth
 fn longBeard(q: vec3f) -> f32 {
-    // covers the jaw, then tapers STRONGLY to a long pointed tip - a wizard's long pointy beard, not a
-    // full bushy round. Rides the jaw like the goatee, so it swings with the mouth
-    var c = q - vec3f(0.0, -0.42, 0.12);
-    let t = clamp((-0.17 - q.y) / 0.66, 0.0, 1.0);         // 0 at the jaw .. 1 at the long tip
-    let k = max(1.0 - 0.96 * t, 0.035);                    // sharp taper to a single long point
-    c.x = c.x / k;
-    var d = sdEllipsoid(c, vec3f(0.125, 0.36, 0.085)) * k;
-    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.24, 0.13), vec3f(0.135, 0.1, 0.08)), 0.05);  // jaw cover
-    return d - 0.011 * vnoise(q * vec3f(60.0, 8.0, 60.0));
+    // an acute upside-down triangle: a flat top at the jaw (below the mouth) tapering straight to a single
+    // long point. Not face-hugging (it does not climb the cheeks). Rides the jaw, so it swings with the mouth
+    var p = q;
+    p.z = (q.z - 0.13) * 1.5 + 0.13;                       // flatten front-to-back into a triangular slab
+    var d = sdTaper(p, vec3f(0.0, -0.2, 0.13), vec3f(0.0, -0.70, 0.11), 0.17, 0.004);
+    d = max(d, q.y + 0.2);                                 // flat top at the jaw, below the mouth (no cap over the lip)
+    return d - 0.012 * vnoise(q * vec3f(60.0, 8.0, 60.0));
 }
 
 fn lowerParts(q: vec3f) -> vec2f {
@@ -663,7 +661,9 @@ fn albedo(mat: f32) -> vec3f {
 }
 
 fn isFelt(mat: f32) -> bool {
-    return !(mat == M_EYE || mat == M_GLASS || mat == M_PHONE || mat == M_BUTTON);
+    // the mouth interior and tongue are wet flesh, not fleece: felt fiber noise made the tongue look hairy
+    return !(mat == M_EYE || mat == M_GLASS || mat == M_PHONE || mat == M_BUTTON
+             || mat == M_MOUTH || mat == M_TONGUE);
 }
 
 fn shade(p: vec3f, rd: vec3f, mat: f32) -> vec3f {
