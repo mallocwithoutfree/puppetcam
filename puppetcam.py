@@ -611,7 +611,8 @@ def main():
     ap.add_argument("--no-headphones", action="store_true")
     ap.add_argument("--no-erase", action="store_true", help="don't remove you from the video")
     ap.add_argument("--lift", type=float, default=0.15, help="raise puppet, fraction of face height")
-    ap.add_argument("--pez", type=float, default=1.0, help="head squareness 0 (oval) .. 1 (Pez block)")
+    ap.add_argument("--pez", type=float, default=None,
+                    help="head squareness 0 (oval) .. 1 (Pez block); default 1, but --wizard-hat rounds it")
     ap.add_argument("--mouth-gain", type=float, default=2.2, help="how wide the mouth opens per jaw movement")
     ap.add_argument("--brow-gain", type=float, default=1.8, help="eyebrow expressiveness")
     ap.add_argument("--long", type=float, default=1.0, help="head elongation 0 (round) .. 1.2 (long)")
@@ -649,7 +650,7 @@ def main():
             print(f"style ({args.style}): {puppet_style.summary(style)}")
     cfg = {"skin": SKIN[args.skin], "glasses": not args.no_glasses,
            "long": float(np.clip(args.long, 0, 1.2)), "shirt": SHIRT[args.shirt],
-           "pez": float(np.clip(args.pez, 0, 1)),
+           "pez": float(np.clip(1.0 if args.pez is None else args.pez, 0, 1)),
            "shoulders": float(np.clip(args.shoulders, 0.5, 1.2)),
            "headphones": not args.no_headphones, "hairline": args.hairline,
            "forehead": float(np.clip(args.forehead, 0, 1))}
@@ -671,6 +672,8 @@ def main():
         cfg.update(wizard_hat=True, long_hair=True, long_beard=True, headphones=False)
         if args.hairline == "widow":
             cfg["hairline"] = "straight"                   # hair flows back under the hat, no peak
+        if args.pez is None:
+            cfg["pez"] = 0.3                               # a rounder head/jaw, not the square Pez block
         if not args.no_beard:
             cfg["full_beard"] = True                       # fill the jaw behind the long beard
         if not args.no_mustache:
