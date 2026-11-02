@@ -166,10 +166,12 @@ fn mouthDroop() -> f32 {
 }
 
 fn headBase(q: vec3f) -> f32 {
-    let hy = 0.31 + 0.06 * g_long;
+    let hy = (0.31 + 0.06 * g_long) * (1.0 - 0.09 * g_female);
     var c = q - vec3f(0.0, -0.03, 0.0);
     let t = clamp(-c.y / hy, -1.0, 1.0);
-    c.x = c.x / (1.0 + 0.12 * (1.0 - 0.55 * g_female) * t);   // heavier, wider at the jaw (slimmer when female)
+    c.x = c.x / (1.0 + 0.12 * (1.0 - 0.8 * g_female) * t);    // heavier, wider at the jaw (much slimmer when female)
+    // taper the whole width in a bit when female (a narrower, softer face, not a broad male skull)
+    c.x = c.x / (1.0 - 0.06 * g_female);
     let e = sdEllipsoid(c, vec3f(0.25, hy, 0.21));
     let b = sdRoundBox(c, vec3f(0.245, hy, 0.205), 0.13);
     return mix(e, b, g_pez) * 0.93;
@@ -208,16 +210,20 @@ fn hairAmt(q: vec3f) -> f32 {
 // sculpted felt head: dome, brow ridge, cheeks, chin, nose, nostrils, raised hair cap
 fn skull(q: vec3f) -> vec2f {
     var d = headBase(q);
-    d = smin(d, sdEllipsoid(q - vec3f(0.0, 0.135, 0.165), vec3f(0.20, 0.045, 0.06)), 0.04);
+    // brow ridge: softer and less projecting when female (a heavy brow bone reads masculine)
+    d = smin(d, sdEllipsoid(q - vec3f(0.0, 0.135, 0.165), vec3f(0.20, 0.045, 0.06) * vec3f(1.0, 1.0 - 0.5 * g_female, 1.0 - 0.45 * g_female)), 0.04);
     let ax = vec3f(abs(q.x), q.y, q.z);
     // cheeks: a smile pushes them up and out (apple cheeks)
     let sm = max(g_corners, 0.0);
-    d = smin(d, sdSphere(ax - vec3f(0.13 + 0.01 * sm, -0.10 + 0.035 * sm, 0.14 + 0.02 * sm), 0.085 + 0.012 * sm), 0.05);
-    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.31, 0.12), vec3f(0.11, 0.08, 0.09)), 0.05);
-    // jowls: heavy cheek masses sagging beside the chin, below the mouth corners (slimmer when female)
-    let jw = 1.0 - 0.5 * g_female;
-    d = smin(d, sdEllipsoid(ax - vec3f(0.165, -0.27, 0.11), vec3f(0.1, 0.12, 0.09) * vec3f(jw, 1.0, jw)), 0.06);
-    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.025, 0.24), vec3f(0.08, 0.09, 0.085)), 0.03);
+    // cheeks: higher and smaller when female (soft cheekbones, not heavy jowly cheeks)
+    d = smin(d, sdSphere(ax - vec3f(0.13 + 0.01 * sm - 0.012 * g_female, -0.10 + 0.035 * sm + 0.03 * g_female, 0.14 + 0.02 * sm), (0.085 + 0.012 * sm) * (1.0 - 0.14 * g_female)), 0.05);
+    // chin: narrower, shorter and tapered when female (a soft chin, not a heavy male jaw)
+    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.31 + 0.04 * g_female, 0.12), vec3f(0.11 * (1.0 - 0.4 * g_female), 0.08 * (1.0 - 0.15 * g_female), 0.09)), 0.05);
+    // jowls: heavy cheek masses sagging beside the chin (nearly gone when female - a smooth soft jawline)
+    let jw = 1.0 - 0.85 * g_female;
+    d = smin(d, sdEllipsoid(ax - vec3f(0.165 - 0.03 * g_female, -0.27, 0.11), vec3f(0.1, 0.12, 0.09) * vec3f(jw, 1.0 - 0.5 * g_female, jw)), 0.06);
+    // nose: smaller and narrower when female (the bulbous male nose was the biggest masculine tell)
+    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.025, 0.24), vec3f(0.08, 0.09, 0.085) * vec3f(1.0 - 0.45 * g_female, 1.0 - 0.25 * g_female, 1.0 - 0.42 * g_female)), 0.03);
     d = max(d, -sdSphere(ax - vec3f(0.032, -0.1, 0.275), 0.015));
     let h = hairAmt(q);
     if (h > 0.0) {
@@ -264,11 +270,12 @@ fn beardAmt(q: vec3f) -> f32 {
 
 // brow line ends for the +x side (mirrored): brow-up raises it, brow-down pulls the inner end down
 fn browInner() -> vec3f {
-    return vec3f(0.03, 0.15 + 0.03 * g_brow.x - 0.035 * g_brow.y, 0.232);
+    return vec3f(0.03, 0.15 + 0.03 * g_brow.x - 0.035 * g_brow.y + 0.018 * g_female, 0.232);
 }
 
 fn browOuter() -> vec3f {
-    return vec3f(0.15, 0.158 + 0.03 * g_brow.x + 0.055 * g_vulcan, 0.2);   // vulcan: outer tail swept up
+    // female: raised and arched (higher at the outer end); vulcan: outer tail swept up
+    return vec3f(0.15, 0.158 + 0.03 * g_brow.x + 0.055 * g_vulcan + 0.04 * g_female, 0.2);
 }
 
 // hair growth direction along the brow (t: 0 inner .. 1 outer): out and up at the inner end,
@@ -301,10 +308,11 @@ fn browLock(ax: vec3f, i: i32) -> f32 {
     let t = clamp((f32(i) + (h2 - 0.5) * 1.6) / f32(BROW_LOCKS - 1), 0.0, 1.0);
     let root = mix(a, b, t) + vec3f(0.0, (h - 0.5) * 0.02, (h2 - 0.5) * 0.008);
     let dir = normalize(browFlow(t) + vec3f(0.0, (h - 0.5) * 0.5, (h2 - 0.5) * 0.2));
-    let len = mix(0.045, 0.09, t) * (0.7 + 0.6 * h2);
+    let len = mix(0.045, 0.09, t) * (0.7 + 0.6 * h2) * (1.0 - 0.25 * g_female);   // shorter when female
     let mid = root + dir * len * 0.5 + vec3f(0.0, 0.008, 0.004);
     let tip = root + dir * len + vec3f(0.0, -0.016 * t - 0.006 * h, 0.0);
-    return min(sdTaper(ax, root, mid, 0.0075, 0.0045), sdTaper(ax, mid, tip, 0.0045, 0.0012));
+    let fw = 1.0 - 0.6 * g_female;                    // finer (thinner) brow hairs when female
+    return min(sdTaper(ax, root, mid, 0.0075 * fw, 0.0045 * fw), sdTaper(ax, mid, tip, 0.0045 * fw, 0.0012 * fw));
 }
 
 // bushy brow as many fine locks. Distance for one side (ax = |x| local point); a bounding
