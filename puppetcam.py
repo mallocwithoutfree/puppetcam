@@ -675,9 +675,7 @@ def main():
         if args.pez is None:
             cfg["pez"] = 0.3                               # a rounder head/jaw, not the square Pez block
         if args.no_beard:
-            cfg.update(long_beard=False, full_beard=False)  # --no-beard removes the beard
-        else:
-            cfg["full_beard"] = True                       # cover the jaw/cheeks; long_beard tapers it to a point
+            cfg["long_beard"] = False                      # --no-beard removes the triangular beard
         if not args.no_mustache:
             cfg["mustache"] = True                         # mustache over the upper lip
         if not args.hair:
