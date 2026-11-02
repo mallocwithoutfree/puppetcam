@@ -674,8 +674,10 @@ def main():
             cfg["hairline"] = "straight"                   # hair flows back under the hat, no peak
         if args.pez is None:
             cfg["pez"] = 0.3                               # a rounder head/jaw, not the square Pez block
-        if not args.no_beard:
-            cfg["full_beard"] = True                       # fill the jaw behind the long beard
+        if args.no_beard:
+            cfg.update(long_beard=False, full_beard=False)  # --no-beard removes the beard
+        else:
+            cfg["full_beard"] = True                       # cover the jaw/cheeks; long_beard tapers it to a point
         if not args.no_mustache:
             cfg["mustache"] = True                         # mustache over the upper lip
         if not args.hair:
