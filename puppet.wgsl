@@ -377,14 +377,23 @@ fn vulcanEars(ax: vec3f) -> f32 {
     return smin(d, tip, 0.03);
 }
 
-// --wizard-hat: a wide round brim at the hairline plus a tall cone rising to a forward-drooping tip.
+// --wizard-hat: a tall, slender wizard hat - a narrow conical crown that bends over and droops to a
+// floppy point, above a modest soft brim. (A short wide cone read as a flat-brim hat, not a wizard's.)
 // q = head local point; felt, reuses M_SHIRT (no shirt in the head pass)
 fn wizardHat(q: vec3f) -> f32 {
-    var d = sdEllipsoid(q - vec3f(0.0, 0.31, 0.0), vec3f(0.36, 0.022, 0.36));   // brim
-    var cone = sdTaper(q, vec3f(0.0, 0.30, 0.0), vec3f(0.0, 0.56, 0.03), 0.18, 0.09);
-    cone = min(cone, sdTaper(q, vec3f(0.0, 0.56, 0.03), vec3f(0.0, 0.70, 0.18), 0.09, 0.006));
-    d = smin(d, cone, 0.05);
-    return d - 0.007 * vnoise(q * vec3f(45.0, 45.0, 45.0));
+    // wide brim that curves DOWN at the edges (a thin cap of a big sphere centred below the hat), so it
+    // droops like floppy felt instead of lying flat (a flat disc read as a stiff flat-brim hat)
+    let R = 0.7;
+    let bc = q - vec3f(0.0, 0.30 - R, 0.0);
+    var brim = abs(length(bc) - R) - 0.018;
+    brim = max(brim, length(q.xz) - 0.33);             // outer radius
+    brim = max(brim, 0.17 - q.y);                      // keep only the upper (drooping) cap
+    // tall slender crown that bends forward and droops to a floppy point
+    var cone = sdTaper(q, vec3f(0.0, 0.30, 0.0), vec3f(0.0, 0.50, 0.0), 0.14, 0.075);
+    cone = min(cone, sdTaper(q, vec3f(0.0, 0.50, 0.0), vec3f(0.03, 0.69, 0.05), 0.075, 0.035));
+    cone = min(cone, sdTaper(q, vec3f(0.03, 0.69, 0.05), vec3f(0.06, 0.60, 0.24), 0.035, 0.004));
+    var d = smin(brim, cone, 0.04);
+    return d - 0.006 * vnoise(q * vec3f(45.0, 45.0, 45.0));
 }
 
 // parts that ride on the upper head (never cut by the hinge)
