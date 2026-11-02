@@ -280,6 +280,7 @@ def check_mouth(r):
 
 
 M_MOUTH = 8                     # puppet.wgsl material id
+M_BUTTON = 12                   # enamel reuses the button id in the head pass
 
 
 def check_outline(r):
@@ -451,6 +452,37 @@ def check_wizard_hat(r):
     return not bad, f"wizard hat: added top pixels {added}, M_SHIRT px {hat_mat} {bad[:2]}"
 
 
+def check_teeth(r):
+    """--teeth adds upper and lower rows of teeth (enamel, reusing M_BUTTON in the head pass) that show
+    when the mouth is open and stay hidden behind the closed lips; nothing when the flag is off."""
+    on = GpuPuppet(dict(CFG, headphones=False, glasses=False, teeth=True),
+                   p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+    off = GpuPuppet(dict(CFG, headphones=False, glasses=False),
+                    p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+
+    reg = np.zeros((p.OUT_H, p.S), bool)
+    reg[310:510, 171:341] = True                        # the mouth region (M_BUTTON lives only here on a head)
+
+    def teeth_px(g, st):
+        g.debug_view = 3
+        c, a, _ = g.head(st)
+        g.debug_view = 0
+        idm = np.rint(c[..., 2].astype(np.float32) / 16).astype(int)
+        return int(((idm == M_BUTTON) & (a > 0.999) & reg).sum())
+
+    open_on = teeth_px(on, state(mouth=0.8))
+    open_off = teeth_px(off, state(mouth=0.8))
+    closed_on = teeth_px(on, state(mouth=0.0))
+    bad = []
+    if open_on < 180:
+        bad.append(("open teeth px", open_on))
+    if open_off != 0:
+        bad.append(("teeth with flag off", open_off))
+    if closed_on > 80:
+        bad.append(("teeth through closed lips", closed_on))
+    return not bad, f"teeth: open {open_on}px, off {open_off}px, closed {closed_on}px {bad[:2]}"
+
+
 def check_wizard(r):
     """The --wizard-hat preset is a full wizard: the hat, long hair hanging below the jaw (M_HAIR) and a
     long beard hanging well below the chin (M_BEARD in the lower canvas), vs a bare-headed baseline."""
@@ -566,7 +598,8 @@ def sheets(r, out):
     cv2.imwrite(os.path.join(out, "female.png"), np.hstack(tiles))
     # vulcan (ears + brows + bowl) and wizard hat, a few poses each
     for name, extra in (("vulcan", dict(CFG, headphones=False, glasses=False, hairline="straight", vulcan=True)),
-                        ("wizard_hat", WIZ)):
+                        ("wizard_hat", WIZ),
+                        ("teeth", dict(CFG, headphones=False, glasses=False, teeth=True))):
         g = GpuPuppet(extra, p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN)
         tiles = []
         for st in poses:
@@ -589,7 +622,7 @@ def main():
                      ("outline", check_outline), ("smile", check_smile),
                      ("female", check_female), ("female_mouth", check_female_mouth),
                      ("vulcan", check_vulcan), ("wizard_hat", check_wizard_hat),
-                     ("wizard", check_wizard),
+                     ("wizard", check_wizard), ("teeth", check_teeth),
                      ("timing", timing)):
         ok, msg = fn(r)
         ok_all &= ok
