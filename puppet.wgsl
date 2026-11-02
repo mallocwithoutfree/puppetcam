@@ -343,10 +343,13 @@ fn browLockAt(ax: vec3f) -> vec2f {
 fn longHair(q: vec3f) -> f32 {
     let ax = vec3f(abs(q.x), q.y, q.z);
     let t = clamp((0.14 - ax.y) / 0.78, 0.0, 1.0);         // 0 at the temple .. 1 at the tail
-    let cx = 0.205 - 0.02 * t;                             // lies flat against the side of the head
-    let halfw = mix(0.036, 0.016, t);                      // slim curtain, tapers to a thin tail
-    // top tucked lower (under a hat brim) so the curtain head doesn't bulge out at the temple as a "bun"
-    var d = sdRoundBox(ax - vec3f(cx, -0.24, 0.0), vec3f(halfw, 0.42, 0.11), 0.03);
+    let cx = 0.22 - 0.03 * t;                              // sits at the outer sides
+    let halfw = mix(0.034, 0.014, t);                      // slim curtain, tapers to a thin tail
+    // --female: long curtains hanging past the jaw. --wizard-hat (g_hat): shorter, framing only to the jaw
+    // so they don't hang as tails beside the long pointy beard
+    let cyc = mix(-0.24, -0.10, g_hat);                    // curtain centre y
+    let cyh = mix(0.42, 0.31, g_hat);                      // curtain half-height
+    var d = sdRoundBox(ax - vec3f(cx, cyc, 0.0), vec3f(halfw, cyh, 0.11), 0.03);
     d = smin(d, sdEllipsoid(q - vec3f(0.0, 0.1, -0.03), vec3f(0.25, 0.26, 0.25)), 0.1);  // crown + back, hugging
     d = max(d, -sdEllipsoid(q - vec3f(0.0, -0.05, 0.28), vec3f(0.255, 0.42, 0.18)));      // keep off the face
     d -= 0.009 * vnoise(q * vec3f(55.0, 16.0, 55.0));      // fiber
@@ -391,10 +394,10 @@ fn wizardHat(q: vec3f) -> f32 {
     var brim = abs(length(bc) - R) - 0.018;
     brim = max(brim, length(vec2f(q.x, q.z / 0.72)) - 0.46);   // really wide at the sides, shallower front/back
     brim = max(brim, 0.04 - q.y);                              // drooping cap
-    // tall slender crown tapering to a sharp point, bending forward and drooping to a floppy tip
-    var cone = sdTaper(q, vec3f(0.0, 0.20, 0.0), vec3f(0.0, 0.38, 0.0), 0.135, 0.055);
-    cone = min(cone, sdTaper(q, vec3f(0.0, 0.38, 0.0), vec3f(0.03, 0.53, 0.05), 0.055, 0.016));
-    cone = min(cone, sdTaper(q, vec3f(0.03, 0.53, 0.05), vec3f(0.06, 0.46, 0.23), 0.016, 0.0015));
+    // crown is a WIDE cone from the brim straight up to a point - it encloses the whole head, so the head
+    // (and hair) can't bulge out between the cone and the brim as a "dome". Then a floppy drooping tip
+    var cone = sdTaper(q, vec3f(0.0, 0.19, 0.0), vec3f(0.03, 0.52, 0.04), 0.25, 0.02);
+    cone = min(cone, sdTaper(q, vec3f(0.03, 0.52, 0.04), vec3f(0.06, 0.45, 0.22), 0.02, 0.0015));
     var d = smin(brim, cone, 0.04);
     return d - 0.006 * vnoise(q * vec3f(45.0, 45.0, 45.0));
 }
@@ -452,13 +455,15 @@ fn upperParts(q: vec3f) -> vec2f {
 // long flowing beard hanging from the chin to a tapered point, below the mouth (the mustache covers the
 // upper lip). Rides the jaw like the goatee, so it swings with the mouth
 fn longBeard(q: vec3f) -> f32 {
-    var c = q - vec3f(0.0, -0.46, 0.13);
-    let t = clamp((-0.3 - q.y) / 0.55, 0.0, 1.0);          // 0 at the chin .. 1 at the tip
-    let k = 1.0 - 0.5 * t;                                 // tapers toward the bottom
+    // covers the jaw, then tapers STRONGLY to a long pointed tip - a wizard's long pointy beard, not a
+    // full bushy round. Rides the jaw like the goatee, so it swings with the mouth
+    var c = q - vec3f(0.0, -0.42, 0.12);
+    let t = clamp((-0.17 - q.y) / 0.66, 0.0, 1.0);         // 0 at the jaw .. 1 at the long tip
+    let k = max(1.0 - 0.96 * t, 0.035);                    // sharp taper to a single long point
     c.x = c.x / k;
-    var d = sdEllipsoid(c, vec3f(0.14, 0.33, 0.10)) * k;
-    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.3, 0.15), vec3f(0.15, 0.10, 0.075)), 0.06);  // onto the jaw front
-    return d - 0.013 * vnoise(q * vec3f(65.0, 9.0, 65.0));  // coarse fiber
+    var d = sdEllipsoid(c, vec3f(0.125, 0.36, 0.085)) * k;
+    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.24, 0.13), vec3f(0.135, 0.1, 0.08)), 0.05);  // jaw cover
+    return d - 0.011 * vnoise(q * vec3f(60.0, 8.0, 60.0));
 }
 
 fn lowerParts(q: vec3f) -> vec2f {
