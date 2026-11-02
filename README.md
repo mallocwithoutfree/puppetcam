@@ -157,7 +157,7 @@ silently set to the nearest limit.
 
 | Switch | Default | Values | Description |
 |---|---|---|---|
-| `--female` | off | flag | Feminine puppet preset: long face-framing hair, eyelashes, lips, and a bust, plus a narrower jaw and finer brows. Turns off facial hair and the headphones (the cups clip the hair curtains). Every underlying switch (`--hair`, `--shirt`, `--hairline`, …) still applies alongside it. |
+| `--female` | off | flag | Feminine puppet preset: long face-framing hair, eyelashes, lips, and a bust, plus a softened face — smaller nose, finer arched brows, slimmer jaw, no jowls, a shorter tapered chin. Turns off facial hair and the headphones (the cups clip the hair curtains). Every underlying switch (`--hair`, `--shirt`, `--hairline`, …) still applies alongside it. |
 | `--vulcan` | off | flag | Pointed ears, upswept (angled) brows, and a straight bowl hairline. Turns off the headphones (the cups cover the ears). Combinable with any other look. |
 | `--wizard-hat` | off | flag | Full wizard preset (Gandalf): a tall pointed grey felt hat, long grey hair, and a long grey beard with a mustache. Turns off the headphones (the brim and hair clip the band). Colour and facial-hair switches still apply; combinable with any other look. |
 | `--skin` | `medium` | `light`, `medium`, `tan`, `deep` | Felt skin colour. Not auto-detected, because lighting changes it too much. |
