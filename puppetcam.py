@@ -666,7 +666,21 @@ def main():
             cfg["hairline"] = "straight"
         cfg.update(vulcan=True, headphones=False)
     if args.wizard_hat:
-        cfg.update(wizard_hat=True, headphones=False)      # the brim clips the headphone band
+        # a wizard: the hat plus long grey hair and a long grey beard (Gandalf). Colours and facial hair
+        # stay overridable; the hat brim and the hair clip the headphones, so those come off
+        cfg.update(wizard_hat=True, long_hair=True, long_beard=True, headphones=False)
+        if args.hairline == "widow":
+            cfg["hairline"] = "straight"                   # hair flows back under the hat, no peak
+        if not args.no_beard:
+            cfg["full_beard"] = True                       # fill the jaw behind the long beard
+        if not args.no_mustache:
+            cfg["mustache"] = True                         # mustache over the upper lip
+        if not args.hair:
+            cfg["hair"] = HAIR["gray"]
+        if not args.beard:
+            cfg["beard"] = HAIR["gray"]
+        if not args.brows:
+            cfg["brow"] = HAIR["gray"]
 
     backend = {"win32": cv2.CAP_DSHOW, "darwin": cv2.CAP_AVFOUNDATION,
                "linux": cv2.CAP_V4L2}.get(sys.platform, cv2.CAP_ANY)

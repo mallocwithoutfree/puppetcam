@@ -38,6 +38,7 @@ var<private> g_lipcol: vec3f;   // lip albedo (linear)
 var<private> g_bust: f32;       // chest shaping on the torso sprite
 var<private> g_vulcan: f32;     // pointed ears + upswept brows (the bowl hairline is set in Python)
 var<private> g_hat: f32;        // wizard hat: tall brimmed felt cone (reuses M_SHIRT in the head pass)
+var<private> g_longbeard: f32;  // long flowing beard hanging below the chin (wizard preset)
 
 const M_SKIN = 0.0;
 const M_HAIR = 1.0;
@@ -388,10 +389,10 @@ fn wizardHat(q: vec3f) -> f32 {
     var brim = abs(length(bc) - R) - 0.018;
     brim = max(brim, length(q.xz) - 0.33);             // outer radius
     brim = max(brim, 0.17 - q.y);                      // keep only the upper (drooping) cap
-    // tall slender crown that bends forward and droops to a floppy point
-    var cone = sdTaper(q, vec3f(0.0, 0.30, 0.0), vec3f(0.0, 0.50, 0.0), 0.14, 0.075);
-    cone = min(cone, sdTaper(q, vec3f(0.0, 0.50, 0.0), vec3f(0.03, 0.69, 0.05), 0.075, 0.035));
-    cone = min(cone, sdTaper(q, vec3f(0.03, 0.69, 0.05), vec3f(0.06, 0.60, 0.24), 0.035, 0.004));
+    // tall slender crown tapering to a sharp point, bending forward and drooping to a floppy tip
+    var cone = sdTaper(q, vec3f(0.0, 0.30, 0.0), vec3f(0.0, 0.52, 0.0), 0.135, 0.055);
+    cone = min(cone, sdTaper(q, vec3f(0.0, 0.52, 0.0), vec3f(0.035, 0.74, 0.06), 0.055, 0.016));
+    cone = min(cone, sdTaper(q, vec3f(0.035, 0.74, 0.06), vec3f(0.07, 0.64, 0.25), 0.016, 0.0015));
     var d = smin(brim, cone, 0.04);
     return d - 0.006 * vnoise(q * vec3f(45.0, 45.0, 45.0));
 }
@@ -446,8 +447,23 @@ fn upperParts(q: vec3f) -> vec2f {
     return r;
 }
 
+// long flowing beard hanging from the chin to a tapered point, below the mouth (the mustache covers the
+// upper lip). Rides the jaw like the goatee, so it swings with the mouth
+fn longBeard(q: vec3f) -> f32 {
+    var c = q - vec3f(0.0, -0.46, 0.13);
+    let t = clamp((-0.3 - q.y) / 0.55, 0.0, 1.0);          // 0 at the chin .. 1 at the tip
+    let k = 1.0 - 0.5 * t;                                 // tapers toward the bottom
+    c.x = c.x / k;
+    var d = sdEllipsoid(c, vec3f(0.14, 0.33, 0.10)) * k;
+    d = smin(d, sdEllipsoid(q - vec3f(0.0, -0.3, 0.15), vec3f(0.15, 0.10, 0.075)), 0.06);  // onto the jaw front
+    return d - 0.013 * vnoise(q * vec3f(65.0, 9.0, 65.0));  // coarse fiber
+}
+
 fn lowerParts(q: vec3f) -> vec2f {
     var r = vec2f(1e3, M_BEARD);
+    if (g_longbeard > 0.5) {
+        r = vec2f(longBeard(q), M_BEARD);
+    }
     if (g_beard > 0.5) {
         var c = q - vec3f(0.0, -0.36, 0.172);
         let t = clamp((-0.25 - q.y) / 0.32, 0.0, 1.0);
@@ -456,7 +472,7 @@ fn lowerParts(q: vec3f) -> vec2f {
         var gt = sdEllipsoid(c, vec3f(0.078, 0.195, 0.056)) * k;
         gt = smin(gt, sdEllipsoid(q - vec3f(0.0, -0.215, 0.215), vec3f(0.03, 0.03, 0.02)), 0.02);
         gt -= 0.009 * vnoise(q * vec3f(85.0, 9.0, 85.0));
-        r = vec2f(gt, M_BEARD);
+        r = U(r, vec2f(gt, M_BEARD));            // union (a long beard may already be set)
     }
     // tongue sunk into the jaw floor, well back from the lip (it read as a disk lolling out when seen
     // from below); hidden inside the head while closed
@@ -772,6 +788,7 @@ fn fs(@builtin(position) fc: vec4f) -> @location(0) vec4f {
     g_bust = P.v[13].w;
     g_vulcan = P.v[11].y;
     g_hat = P.v[11].z;
+    g_longbeard = P.v[11].w;
     g_closed = P.v[7].y;
     let F = P.v[7].z;
     let fuzz = P.v[7].w;
