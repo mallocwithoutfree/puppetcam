@@ -342,12 +342,13 @@ fn browLockAt(ax: vec3f) -> vec2f {
 // volume, carved back off the frontal face so the eyes and nose stay clear. Rides the upper head.
 fn longHair(q: vec3f) -> f32 {
     let ax = vec3f(abs(q.x), q.y, q.z);
-    let t = clamp((0.2 - ax.y) / 0.75, 0.0, 1.0);          // 0 at the temple .. 1 at the tail
-    let cx = 0.265 - 0.02 * t;                             // falls slightly inward
-    let halfw = mix(0.075, 0.016, t);                      // tapers to a thin tail
-    var d = sdRoundBox(ax - vec3f(cx, -0.17, 0.03), vec3f(halfw, 0.38, 0.14), 0.05);
-    d = smin(d, sdEllipsoid(q - vec3f(0.0, 0.12, -0.02), vec3f(0.29, 0.26, 0.26)), 0.06);  // crown + back
-    d = max(d, -sdEllipsoid(q - vec3f(0.0, -0.05, 0.28), vec3f(0.255, 0.42, 0.18)));        // keep off the face
+    let t = clamp((0.14 - ax.y) / 0.75, 0.0, 1.0);         // 0 at the temple .. 1 at the tail
+    let cx = 0.245 - 0.03 * t;                             // hugs the head, falls inward
+    let halfw = mix(0.05, 0.02, t);                        // slimmer curtain, tapers to a thin tail
+    // top tucked lower (under a hat brim) so the curtain head doesn't bulge out at the temple as a "bun"
+    var d = sdRoundBox(ax - vec3f(cx, -0.23, 0.02), vec3f(halfw, 0.4, 0.12), 0.035);
+    d = smin(d, sdEllipsoid(q - vec3f(0.0, 0.1, -0.02), vec3f(0.285, 0.265, 0.26)), 0.12);  // crown + back, blended
+    d = max(d, -sdEllipsoid(q - vec3f(0.0, -0.05, 0.28), vec3f(0.255, 0.42, 0.18)));         // keep off the face
     d -= 0.01 * vnoise(q * vec3f(55.0, 16.0, 55.0));       // fiber
     return d;
 }
