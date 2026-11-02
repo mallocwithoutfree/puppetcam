@@ -225,7 +225,7 @@ Add a check to `tests/render_check.py` for any new visual bug before fixing it.
 | `--shirt` blue/navy/red/green/plaid-gray | blue | plaid-gray is solid gray |
 | `--lid` | 0.35 | 0–0.9 |
 | `--scale` | 2.4 | head size vs face |
-| `--pez` | 1.0 | 0 oval – 1 block |
+| `--pez` | 1.0 | 0 oval – 1 block; arg defaults to None → resolves to 1.0, but `--wizard-hat` rounds it to 0.3 unless given |
 | `--long` | 1.0 | 0–1.2 |
 | `--lift` | 0.15 | fraction of face height |
 | `--body-size` | 1.25 | |

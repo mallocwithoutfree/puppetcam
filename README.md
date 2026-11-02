@@ -190,7 +190,7 @@ current look and says so.
 | Switch | Default | Values | Description |
 |---|---|---|---|
 | `--scale` | `2.4` | > 0 | Puppet head size relative to your face. |
-| `--pez` | `1.0` | `0`–`1` (clamped) | Head squareness: `0` oval, `1` block. |
+| `--pez` | `1.0` | `0`–`1` (clamped) | Head squareness: `0` oval, `1` block. `--wizard-hat` rounds it to `0.3` by default (pass `--pez` to override). |
 | `--long` | `1.0` | `0`–`1.2` (clamped) | Head length: `0` round, `1.2` long. |
 | `--lift` | `0.15` | fraction of face height | Raises the puppet above your face position. |
 

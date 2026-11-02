@@ -342,14 +342,14 @@ fn browLockAt(ax: vec3f) -> vec2f {
 // volume, carved back off the frontal face so the eyes and nose stay clear. Rides the upper head.
 fn longHair(q: vec3f) -> f32 {
     let ax = vec3f(abs(q.x), q.y, q.z);
-    let t = clamp((0.14 - ax.y) / 0.75, 0.0, 1.0);         // 0 at the temple .. 1 at the tail
-    let cx = 0.245 - 0.03 * t;                             // hugs the head, falls inward
-    let halfw = mix(0.05, 0.02, t);                        // slimmer curtain, tapers to a thin tail
+    let t = clamp((0.14 - ax.y) / 0.78, 0.0, 1.0);         // 0 at the temple .. 1 at the tail
+    let cx = 0.205 - 0.02 * t;                             // lies flat against the side of the head
+    let halfw = mix(0.036, 0.016, t);                      // slim curtain, tapers to a thin tail
     // top tucked lower (under a hat brim) so the curtain head doesn't bulge out at the temple as a "bun"
-    var d = sdRoundBox(ax - vec3f(cx, -0.23, 0.02), vec3f(halfw, 0.4, 0.12), 0.035);
-    d = smin(d, sdEllipsoid(q - vec3f(0.0, 0.1, -0.02), vec3f(0.285, 0.265, 0.26)), 0.12);  // crown + back, blended
-    d = max(d, -sdEllipsoid(q - vec3f(0.0, -0.05, 0.28), vec3f(0.255, 0.42, 0.18)));         // keep off the face
-    d -= 0.01 * vnoise(q * vec3f(55.0, 16.0, 55.0));       // fiber
+    var d = sdRoundBox(ax - vec3f(cx, -0.24, 0.0), vec3f(halfw, 0.42, 0.11), 0.03);
+    d = smin(d, sdEllipsoid(q - vec3f(0.0, 0.1, -0.03), vec3f(0.25, 0.26, 0.25)), 0.1);  // crown + back, hugging
+    d = max(d, -sdEllipsoid(q - vec3f(0.0, -0.05, 0.28), vec3f(0.255, 0.42, 0.18)));      // keep off the face
+    d -= 0.009 * vnoise(q * vec3f(55.0, 16.0, 55.0));      // fiber
     return d;
 }
 
@@ -385,11 +385,11 @@ fn vulcanEars(ax: vec3f) -> f32 {
 fn wizardHat(q: vec3f) -> f32 {
     // wide brim that curves DOWN at the edges (a thin cap of a big sphere centred below the hat), so it
     // droops like floppy felt instead of lying flat (a flat disc read as a stiff flat-brim hat)
-    let R = 0.7;
-    let bc = q - vec3f(0.0, 0.30 - R, 0.0);
+    let R = 0.85;
+    let bc = q - vec3f(0.0, 0.33 - R, 0.0);
     var brim = abs(length(bc) - R) - 0.018;
-    brim = max(brim, length(q.xz) - 0.33);             // outer radius
-    brim = max(brim, 0.17 - q.y);                      // keep only the upper (drooping) cap
+    brim = max(brim, length(vec2f(q.x, q.z / 0.72)) - 0.46);   // really wide at the sides, shallower front/back
+    brim = max(brim, 0.12 - q.y);                              // drooping cap, kept above the eyes
     // tall slender crown tapering to a sharp point, bending forward and drooping to a floppy tip
     var cone = sdTaper(q, vec3f(0.0, 0.30, 0.0), vec3f(0.0, 0.52, 0.0), 0.135, 0.055);
     cone = min(cone, sdTaper(q, vec3f(0.0, 0.52, 0.0), vec3f(0.035, 0.74, 0.06), 0.055, 0.016));
