@@ -36,6 +36,8 @@ var<private> g_lashes: f32;     // upper eyelashes
 var<private> g_lips: f32;       // raised, tinted lips around the mouth line
 var<private> g_lipcol: vec3f;   // lip albedo (linear)
 var<private> g_bust: f32;       // chest shaping on the torso sprite
+var<private> g_vulcan: f32;     // pointed ears + upswept brows (the bowl hairline is set in Python)
+var<private> g_hat: f32;        // wizard hat: tall brimmed felt cone (reuses M_SHIRT in the head pass)
 
 const M_SKIN = 0.0;
 const M_HAIR = 1.0;
@@ -181,8 +183,8 @@ fn hairAmt(q: vec3f) -> f32 {
         // forehead top, rising slightly over the temples, dipping to a point in the middle
         front_hl = 0.255 + 0.5 * q.x * q.x - 0.07 * max(0.0, 1.0 - abs(q.x) / 0.075);
     } else if (g_hairline < 1.5) {
-        // square-ish full front
-        front_hl = 0.245 - 1.1 * q.x * q.x;
+        // square-ish full front; a touch lower for the --vulcan bowl fringe
+        front_hl = 0.245 - 1.1 * q.x * q.x - 0.03 * g_vulcan;
     } else {
         // receded at the temples (bald and receding)
         front_hl = 0.22 - 1.6 * q.x * q.x;
@@ -265,13 +267,15 @@ fn browInner() -> vec3f {
 }
 
 fn browOuter() -> vec3f {
-    return vec3f(0.15, 0.158 + 0.03 * g_brow.x, 0.2);
+    return vec3f(0.15, 0.158 + 0.03 * g_brow.x + 0.055 * g_vulcan, 0.2);   // vulcan: outer tail swept up
 }
 
 // hair growth direction along the brow (t: 0 inner .. 1 outer): out and up at the inner end,
-// drooping over the eye at the outer end. Shared by the geometry and the strand shading
+// drooping over the eye at the outer end. Shared by the geometry and the strand shading.
+// --vulcan sweeps the outer end up instead of down (the angled Vulcan brow)
 fn browFlow(t: f32) -> vec3f {
-    return normalize(vec3f(1.0, mix(0.6, -0.45, t), mix(0.3, 0.1, t)));
+    let outer = mix(-0.45, 0.65, g_vulcan);
+    return normalize(vec3f(1.0, mix(0.6, outer, t), mix(0.3, 0.1, t)));
 }
 
 // bushy brow as clumps of hair: each clump a tapered, slightly curved lock from the brow line.
@@ -363,6 +367,26 @@ fn lashes(ax: vec3f) -> f32 {
     return d;
 }
 
+// --vulcan pointed ears: a flattened lobe on each side of the head swept to a sharp point up and back.
+// ax = |x| local point; skin material, unioned so it merges with the head side
+fn vulcanEars(ax: vec3f) -> f32 {
+    var p = ax - vec3f(0.235, 0.0, -0.01);
+    p.x *= 2.0;                                           // flatten against the skull
+    var d = sdEllipsoid(p, vec3f(0.055, 0.082, 0.05));
+    let tip = sdTaper(ax, vec3f(0.25, 0.04, -0.02), vec3f(0.285, 0.17, -0.06), 0.028, 0.002);
+    return smin(d, tip, 0.03);
+}
+
+// --wizard-hat: a wide round brim at the hairline plus a tall cone rising to a forward-drooping tip.
+// q = head local point; felt, reuses M_SHIRT (no shirt in the head pass)
+fn wizardHat(q: vec3f) -> f32 {
+    var d = sdEllipsoid(q - vec3f(0.0, 0.31, 0.0), vec3f(0.36, 0.022, 0.36));   // brim
+    var cone = sdTaper(q, vec3f(0.0, 0.30, 0.0), vec3f(0.0, 0.56, 0.03), 0.18, 0.09);
+    cone = min(cone, sdTaper(q, vec3f(0.0, 0.56, 0.03), vec3f(0.0, 0.70, 0.18), 0.09, 0.006));
+    d = smin(d, cone, 0.05);
+    return d - 0.007 * vnoise(q * vec3f(45.0, 45.0, 45.0));
+}
+
 // parts that ride on the upper head (never cut by the hinge)
 fn upperParts(q: vec3f) -> vec2f {
     let ax = vec3f(abs(q.x), q.y, q.z);
@@ -373,6 +397,12 @@ fn upperParts(q: vec3f) -> vec2f {
     }
     if (g_lashes > 0.5) {
         r = U(r, vec2f(lashes(ax), M_LASH));
+    }
+    if (g_vulcan > 0.5) {
+        r = U(r, vec2f(vulcanEars(ax), M_SKIN));
+    }
+    if (g_hat > 0.5) {
+        r = U(r, vec2f(wizardHat(q), M_SHIRT));       // felt; M_SHIRT is free in the head pass
     }
     // heavy upper lids: a felt shell over the top of each eye, edge height set by lid
     let edge = EYE_C.y + (1.0 - 2.0 * g_lid) * EYE_R;
@@ -593,6 +623,10 @@ fn albedo(mat: f32) -> vec3f {
     if (mat == M_LASH) {
         return vec3f(0.02, 0.02, 0.025);
     }
+    // M_SHIRT: the shirt on the torso; reused for the gray felt wizard hat on the head (no shirt there)
+    if (g_mode < 0.5) {
+        return vec3f(0.30, 0.31, 0.34);              // gray felt hat
+    }
     return P.v[6].xyz;                                // shirt
 }
 
@@ -727,6 +761,8 @@ fn fs(@builtin(position) fc: vec4f) -> @location(0) vec4f {
     g_lips = P.v[12].w;
     g_lipcol = P.v[13].xyz;
     g_bust = P.v[13].w;
+    g_vulcan = P.v[11].y;
+    g_hat = P.v[11].z;
     g_closed = P.v[7].y;
     let F = P.v[7].z;
     let fuzz = P.v[7].w;

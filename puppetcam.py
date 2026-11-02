@@ -596,6 +596,12 @@ def main():
     ap.add_argument("--female", action="store_true",
                     help="feminine puppet: long face-framing hair, eyelashes, lips, bust; narrower jaw, "
                          "finer brows; no facial hair; headphones off (the cups clip the hair)")
+    ap.add_argument("--vulcan", action="store_true",
+                    help="pointed ears, upswept brows, and a straight bowl hairline; headphones off "
+                         "(the cups cover the ears)")
+    ap.add_argument("--wizard-hat", action="store_true",
+                    help="a tall gray felt wizard hat with a wide brim; headphones off (the brim clips "
+                         "the band)")
     ap.add_argument("--no-glasses", action="store_true")
     ap.add_argument("--lid", type=float, default=0.35, help="resting upper-lid coverage 0..0.9")
     ap.add_argument("--scale", type=float, default=2.4, help="puppet size vs face height")
@@ -654,6 +660,13 @@ def main():
             cfg["hairline"] = "straight"            # the widow's peak reads as the default male hairline
         cfg.update(female=True, long_hair=True, lashes=True, lips=True, bust=not args.no_body,
                    headphones=False, beard_on=False, mustache=False, full_beard=False)
+    if args.vulcan:
+        # ears + upswept brows + a blunt bowl fringe; headphone cups would hide the ears
+        if args.hairline == "widow":
+            cfg["hairline"] = "straight"
+        cfg.update(vulcan=True, headphones=False)
+    if args.wizard_hat:
+        cfg.update(wizard_hat=True, headphones=False)      # the brim clips the headphone band
 
     backend = {"win32": cv2.CAP_DSHOW, "darwin": cv2.CAP_AVFOUNDATION,
                "linux": cv2.CAP_V4L2}.get(sys.platform, cv2.CAP_ANY)
