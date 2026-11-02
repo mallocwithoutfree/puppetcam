@@ -383,17 +383,18 @@ fn vulcanEars(ax: vec3f) -> f32 {
 // floppy point, above a modest soft brim. (A short wide cone read as a flat-brim hat, not a wizard's.)
 // q = head local point; felt, reuses M_SHIRT (no shirt in the head pass)
 fn wizardHat(q: vec3f) -> f32 {
-    // wide brim that curves DOWN at the edges (a thin cap of a big sphere centred below the hat), so it
-    // droops like floppy felt instead of lying flat (a flat disc read as a stiff flat-brim hat)
+    // the hat sits LOW on the head (brim down around the temples, not perched on the crown). Wide brim
+    // that curves DOWN at the edges (a thin cap of a big sphere centred below the hat) so it droops like
+    // floppy felt. The whole hat is kept within the head-canvas headroom (PADT) so the tip is not clipped.
     let R = 0.85;
-    let bc = q - vec3f(0.0, 0.33 - R, 0.0);
+    let bc = q - vec3f(0.0, 0.24 - R, 0.0);
     var brim = abs(length(bc) - R) - 0.018;
     brim = max(brim, length(vec2f(q.x, q.z / 0.72)) - 0.46);   // really wide at the sides, shallower front/back
-    brim = max(brim, 0.12 - q.y);                              // drooping cap, kept above the eyes
+    brim = max(brim, 0.04 - q.y);                              // drooping cap
     // tall slender crown tapering to a sharp point, bending forward and drooping to a floppy tip
-    var cone = sdTaper(q, vec3f(0.0, 0.30, 0.0), vec3f(0.0, 0.52, 0.0), 0.135, 0.055);
-    cone = min(cone, sdTaper(q, vec3f(0.0, 0.52, 0.0), vec3f(0.035, 0.74, 0.06), 0.055, 0.016));
-    cone = min(cone, sdTaper(q, vec3f(0.035, 0.74, 0.06), vec3f(0.07, 0.64, 0.25), 0.016, 0.0015));
+    var cone = sdTaper(q, vec3f(0.0, 0.20, 0.0), vec3f(0.0, 0.38, 0.0), 0.135, 0.055);
+    cone = min(cone, sdTaper(q, vec3f(0.0, 0.38, 0.0), vec3f(0.03, 0.53, 0.05), 0.055, 0.016));
+    cone = min(cone, sdTaper(q, vec3f(0.03, 0.53, 0.05), vec3f(0.06, 0.46, 0.23), 0.016, 0.0015));
     var d = smin(brim, cone, 0.04);
     return d - 0.006 * vnoise(q * vec3f(45.0, 45.0, 45.0));
 }
