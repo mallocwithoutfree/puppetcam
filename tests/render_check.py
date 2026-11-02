@@ -382,6 +382,70 @@ def check_female_mouth(r):
     return worst > 0.08, f"female open-mouth cavity depth (lips on): {worst:.3f} (> 0.08)"
 
 
+M_SKIN, M_BROW, M_SHIRT = 0, 10, 11       # puppet.wgsl material ids
+
+
+def check_vulcan(r):
+    """--vulcan must add pointed ears (the head silhouette widens at ear height) and upswept outer brows
+    (the outer brow rides higher), and nothing when off. Bowl hairline is just --hairline straight."""
+    on = GpuPuppet(dict(CFG, headphones=False, glasses=False, hairline="straight", vulcan=True),
+                   p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+    off = GpuPuppet(dict(CFG, headphones=False, glasses=False, hairline="straight"),
+                    p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+
+    def idmap(g, st):
+        g.debug_view = 3
+        c, a, _ = g.head(st)
+        g.debug_view = 0
+        return np.rint(c[..., 2].astype(np.float32) / 16).astype(int), a > 0.999
+
+    ion, hon = idmap(on, state())
+    ioff, hoff = idmap(off, state())
+    # ears: skin fills the ear-tip region (narrow bands just outside the head centre, upper-mid rows)
+    # that is hair or background on the bare head
+    reg = np.zeros((p.OUT_H, p.S), bool)
+    reg[195:320, 95:135] = True
+    reg[195:320, 377:417] = True
+    ear = int(((ion == M_SKIN) & hon & reg).sum()) - int(((ioff == M_SKIN) & hoff & reg).sum())
+
+    def brow_mean(idm, h):                                 # mean row of the brow pixels
+        ys = np.nonzero((idm == M_BROW) & h)[0]
+        return float(ys.mean()) if ys.size else 0.0
+
+    rise = brow_mean(ioff, hoff) - brow_mean(ion, hon)     # > 0 = vulcan brows ride higher (smaller rows)
+    bad = []
+    if ear < 600:
+        bad.append(("ears", ear))
+    if rise < 10:
+        bad.append(("brow sweep", round(rise, 1)))
+    return not bad, f"vulcan: ear skin px {ear}, brow rise {rise:.0f}px {bad[:2]}"
+
+
+def check_wizard_hat(r):
+    """--wizard-hat must add a tall brimmed hat above the crown (felt, reusing M_SHIRT in the head pass)
+    and nothing when off."""
+    on = GpuPuppet(dict(CFG, headphones=False, wizard_hat=True), p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+    off = GpuPuppet(dict(CFG, headphones=False), p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+
+    def idmap(g, st):
+        g.debug_view = 3
+        c, a, _ = g.head(st)
+        g.debug_view = 0
+        return np.rint(c[..., 2].astype(np.float32) / 16).astype(int), a > 0.999
+
+    ion, hon = idmap(on, state())
+    _, hoff = idmap(off, state())
+    top = slice(0, int(p.OUT_H * 0.34))                    # headroom above the crown
+    added = int((hon[top] & ~hoff[top]).sum())             # hat area the bare head lacks
+    hat_mat = int(((ion == M_SHIRT) & hon).sum())          # hat uses the shirt id in head mode
+    bad = []
+    if added < 3000:
+        bad.append(("hat area", added))
+    if hat_mat < 1500:
+        bad.append(("hat material", hat_mat))
+    return not bad, f"wizard hat: added top pixels {added}, M_SHIRT px {hat_mat} {bad[:2]}"
+
+
 def check_roll(r):
     """The torso tilts the same way as the head and keeps its collar point pinned (the neck base)."""
     w, h, ox, oy = 400, 300, 200, 100
@@ -465,6 +529,15 @@ def sheets(r, out):
         c, a, _ = fem.head(st)
         tiles.append(cv2.resize(on_red(c, a), (300, int(300 * a.shape[0] / a.shape[1]))))
     cv2.imwrite(os.path.join(out, "female.png"), np.hstack(tiles))
+    # vulcan (ears + brows + bowl) and wizard hat, a few poses each
+    for name, extra in (("vulcan", dict(CFG, headphones=False, glasses=False, hairline="straight", vulcan=True)),
+                        ("wizard_hat", dict(CFG, headphones=False, wizard_hat=True))):
+        g = GpuPuppet(extra, p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN)
+        tiles = []
+        for st in poses:
+            c, a, _ = g.head(st)
+            tiles.append(cv2.resize(on_red(c, a), (300, int(300 * a.shape[0] / a.shape[1]))))
+        cv2.imwrite(os.path.join(out, name + ".png"), np.hstack(tiles))
 
 
 def main():
@@ -480,6 +553,7 @@ def main():
                      ("hairline", check_hairline), ("roll", check_roll), ("mouth", check_mouth),
                      ("outline", check_outline), ("smile", check_smile),
                      ("female", check_female), ("female_mouth", check_female_mouth),
+                     ("vulcan", check_vulcan), ("wizard_hat", check_wizard_hat),
                      ("timing", timing)):
         ok, msg = fn(r)
         ok_all &= ok
