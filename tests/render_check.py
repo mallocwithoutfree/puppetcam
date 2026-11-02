@@ -55,8 +55,8 @@ FEM = dict(CFG, headphones=False, glasses=False, hairline="straight", beard_on=F
            hair=p.HAIR["brown"], brow=p.HAIR["brown"], shirt=p.SHIRT["red"], pez=0.3,
            female=True, long_hair=True, lashes=True, lips=True, bust=True)
 
-# the --wizard-hat preset: the hat plus long grey hair and a long grey beard (Gandalf)
-WIZ = dict(CFG, headphones=False, hairline="straight", beard_on=False,
+# the --wizard-hat preset: the hat plus long grey hair and a long grey beard (Gandalf); rounder head
+WIZ = dict(CFG, headphones=False, hairline="straight", beard_on=False, pez=0.3,
            hair=p.HAIR["gray"], beard=p.HAIR["gray"], brow=p.HAIR["gray"],
            wizard_hat=True, long_hair=True, long_beard=True, full_beard=True, mustache=True)
 
