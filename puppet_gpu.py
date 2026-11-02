@@ -81,6 +81,8 @@ class GpuPuppet:
         v[10] = (1.0 if cfg["full_beard"] else 0.0, st.get("neck_top", 0.0), HAIRLINES.index(cfg["hairline"]),
                  cfg["forehead"])
         v[11, 0] = float(self.debug_view)
+        v[11, 1] = 1.0 if cfg.get("vulcan") else 0.0        # pointed ears + upswept brows
+        v[11, 2] = 1.0 if cfg.get("wizard_hat") else 0.0    # tall brimmed felt hat
         # female option (all default off, so the existing male puppet is unchanged)
         v[12] = (1.0 if cfg.get("female") else 0.0, 1.0 if cfg.get("long_hair") else 0.0,
                  1.0 if cfg.get("lashes") else 0.0, 1.0 if cfg.get("lips") else 0.0)
