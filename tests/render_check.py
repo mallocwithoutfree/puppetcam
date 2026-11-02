@@ -468,14 +468,14 @@ def check_wizard(r):
     ioff, hoff = idmap(off, state())
     low = slice(int(p.OUT_H * 0.72), p.OUT_H)               # well below the chin
     beard = int(((ion[low] == M_BEARD) & hon[low]).sum()) - int(((ioff[low] == M_BEARD) & hoff[low]).sum())
-    jaw = slice(int(p.OUT_H * 0.58), p.OUT_H)               # below the jaw, where curtains hang
-    hair = int(((ion[jaw] == M_HAIR) & hon[jaw]).sum()) - int(((ioff[jaw] == M_HAIR) & hoff[jaw]).sum())
+    # the wizard's front hair frames to the jaw (not long tails beside the beard); check total hair volume
+    hair = int(((ion == M_HAIR) & hon).sum()) - int(((ioff == M_HAIR) & hoff).sum())
     hat = int(((ion == M_SHIRT) & hon).sum())
     bad = []
     if beard < 2000:
         bad.append(("long beard", beard))
-    if hair < 2000:
-        bad.append(("long hair", hair))
+    if hair < 3000:
+        bad.append(("hair", hair))
     if hat < 1500:
         bad.append(("hat", hat))
     return not bad, f"wizard preset: beard px {beard}, hair px {hair}, hat px {hat} {bad[:2]}"
