@@ -294,6 +294,7 @@ Benchmark the full pipeline on a recorded clip:
 | `style: no frames facing the camera` | Your camera is off to the side. Face it and press `c`. |
 | Puppet too big or off-centre | Use the preview keys `w`/`s`/`=`/`-`, then put the printed values in your command. |
 | Video app shows a black or OBS image | Stop the OBS app's own Virtual Camera, then restart puppetcam. |
+| Crash after a long session (macOS): `Error creating pixel buffer: -6662` / `gpu_buffer_storage_cv_pixel_buffer ... Check failed` | MediaPipe's GPU segmenter ran out of Metal buffer memory during a sustained run. Run with `--seg-mode hybrid` (CPU segmentation; still 30 fps on Apple Silicon, same coverage). |
 
 ## Windows
 

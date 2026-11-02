@@ -248,6 +248,14 @@ Add a check to `tests/render_check.py` for any new visual bug before fixing it.
   plate (global gain can't fix local lighting). Candidates: refresh plate pixels from clear background each
   frame; local (tiled) gain.
 - Arms/hands via PoseLandmarker/HandLandmarker exist in mediapipe 1.2.0 — deferred for speed.
+- MediaPipe GPU segmenter crash on macOS (seen 2026-11-02, ~10 min into a `--seg-mode gpu` live run):
+  `F0000 gpu_buffer_storage_cv_pixel_buffer.cc:27 Check failed: !err Error creating pixel buffer: -6662`
+  (CoreVideo `kCVReturnAllocationFailed`) inside `ImageToTensorMetalConverter::Convert` — the Metal
+  CVPixelBuffer pool was exhausted during a sustained run (the segmenter and the wgpu puppet share the one
+  Metal device). It is a native `abort()`, not catchable from Python. Workaround: `--seg-mode hybrid` (CPU
+  segmentation, never touches the Metal pixel-buffer path; measured 30 fps on the M2 Pro, same torso
+  coverage). Not yet root-caused (leak vs. transient pressure); owner chose the workaround over a code fix
+  (2026-11-02). A fuller fix would default macOS to hybrid or downscale the segmenter input.
 
 ## Design guardrails
 
