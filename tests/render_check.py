@@ -55,6 +55,11 @@ FEM = dict(CFG, headphones=False, glasses=False, hairline="straight", beard_on=F
            hair=p.HAIR["brown"], brow=p.HAIR["brown"], shirt=p.SHIRT["red"], pez=0.3,
            female=True, long_hair=True, lashes=True, lips=True, bust=True)
 
+# the --wizard-hat preset: the hat plus long grey hair and a long grey beard (Gandalf)
+WIZ = dict(CFG, headphones=False, hairline="straight", beard_on=False,
+           hair=p.HAIR["gray"], beard=p.HAIR["gray"], brow=p.HAIR["gray"],
+           wizard_hat=True, long_hair=True, long_beard=True, full_beard=True, mustache=True)
+
 
 def state(mouth=0.0, yaw=0.0, pitch=0.0, brow=(0.0, 0.0), corners=0.0, lid=0.35):
     return {"mouth": mouth, "lid": lid, "gaze": (0.0, 0.0), "yaw": math.radians(yaw),
@@ -382,7 +387,7 @@ def check_female_mouth(r):
     return worst > 0.08, f"female open-mouth cavity depth (lips on): {worst:.3f} (> 0.08)"
 
 
-M_SKIN, M_BROW, M_SHIRT = 0, 10, 11       # puppet.wgsl material ids
+M_SKIN, M_BEARD, M_BROW, M_SHIRT = 0, 2, 10, 11       # puppet.wgsl material ids
 
 
 def check_vulcan(r):
@@ -444,6 +449,36 @@ def check_wizard_hat(r):
     if hat_mat < 1500:
         bad.append(("hat material", hat_mat))
     return not bad, f"wizard hat: added top pixels {added}, M_SHIRT px {hat_mat} {bad[:2]}"
+
+
+def check_wizard(r):
+    """The --wizard-hat preset is a full wizard: the hat, long hair hanging below the jaw (M_HAIR) and a
+    long beard hanging well below the chin (M_BEARD in the lower canvas), vs a bare-headed baseline."""
+    on = GpuPuppet(WIZ, p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+    off = GpuPuppet(dict(WIZ, long_hair=False, long_beard=False, full_beard=False),
+                    p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN, ss=1)
+
+    def idmap(g, st):
+        g.debug_view = 3
+        c, a, _ = g.head(st)
+        g.debug_view = 0
+        return np.rint(c[..., 2].astype(np.float32) / 16).astype(int), a > 0.999
+
+    ion, hon = idmap(on, state())
+    ioff, hoff = idmap(off, state())
+    low = slice(int(p.OUT_H * 0.72), p.OUT_H)               # well below the chin
+    beard = int(((ion[low] == M_BEARD) & hon[low]).sum()) - int(((ioff[low] == M_BEARD) & hoff[low]).sum())
+    jaw = slice(int(p.OUT_H * 0.58), p.OUT_H)               # below the jaw, where curtains hang
+    hair = int(((ion[jaw] == M_HAIR) & hon[jaw]).sum()) - int(((ioff[jaw] == M_HAIR) & hoff[jaw]).sum())
+    hat = int(((ion == M_SHIRT) & hon).sum())
+    bad = []
+    if beard < 2000:
+        bad.append(("long beard", beard))
+    if hair < 2000:
+        bad.append(("long hair", hair))
+    if hat < 1500:
+        bad.append(("hat", hat))
+    return not bad, f"wizard preset: beard px {beard}, hair px {hair}, hat px {hat} {bad[:2]}"
 
 
 def check_roll(r):
@@ -531,7 +566,7 @@ def sheets(r, out):
     cv2.imwrite(os.path.join(out, "female.png"), np.hstack(tiles))
     # vulcan (ears + brows + bowl) and wizard hat, a few poses each
     for name, extra in (("vulcan", dict(CFG, headphones=False, glasses=False, hairline="straight", vulcan=True)),
-                        ("wizard_hat", dict(CFG, headphones=False, wizard_hat=True))):
+                        ("wizard_hat", WIZ)):
         g = GpuPuppet(extra, p.S, p.PADT, p.OUT_H, p.MOUTH_OPEN)
         tiles = []
         for st in poses:
@@ -554,6 +589,7 @@ def main():
                      ("outline", check_outline), ("smile", check_smile),
                      ("female", check_female), ("female_mouth", check_female_mouth),
                      ("vulcan", check_vulcan), ("wizard_hat", check_wizard_hat),
+                     ("wizard", check_wizard),
                      ("timing", timing)):
         ok, msg = fn(r)
         ok_all &= ok
