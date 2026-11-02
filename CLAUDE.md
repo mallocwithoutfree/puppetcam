@@ -215,7 +215,7 @@ Add a check to `tests/render_check.py` for any new visual bug before fixing it.
 | `--skin` light/medium/tan/deep | medium | |
 | `--hair`, `--beard`, `--brows` gray/salt/white/brown/black | auto (else salt / gray / = beard) | override auto-style |
 | `--no-beard`, `--full-beard`, `--mustache`, `--no-mustache` | auto | override detected facial hair |
-| `--female` | off | preset: long face-framing hair, eyelashes, lips, bust; narrower jaw, finer brows; no facial hair; headphones off (cups clip the hair). Each underlying switch still overridable alongside it |
+| `--female` | off | preset: long face-framing hair, eyelashes, lips, bust; softened face (smaller/narrower nose, finer arched brows, softer brow ridge, slimmer jaw, no jowls, shorter tapered chin — all gated on `g_female`); no facial hair; headphones off. Each underlying switch still overridable |
 | `--vulcan` | off | pointed ears + upswept brows + straight bowl hairline; headphones off (cups cover the ears). Independent flag, combinable with any look |
 | `--wizard-hat` | off | full wizard (Gandalf) preset: tall pointed grey felt hat + long grey hair + long grey beard + mustache; headphones off. Colour/facial-hair switches still override; combinable with any look |
 | `--hairline` widow/straight/receding/bald | widow | not auto-detected (owner's choice); `--female` and `--vulcan` bump the default widow to straight |
