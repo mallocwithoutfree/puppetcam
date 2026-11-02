@@ -602,6 +602,8 @@ def main():
     ap.add_argument("--wizard-hat", action="store_true",
                     help="a tall gray felt wizard hat with a wide brim; headphones off (the brim clips "
                          "the band)")
+    ap.add_argument("--teeth", action="store_true",
+                    help="upper and lower rows of teeth, shown when the mouth opens; combinable with any look")
     ap.add_argument("--no-glasses", action="store_true")
     ap.add_argument("--lid", type=float, default=0.35, help="resting upper-lid coverage 0..0.9")
     ap.add_argument("--scale", type=float, default=2.4, help="puppet size vs face height")
@@ -653,7 +655,7 @@ def main():
            "pez": float(np.clip(1.0 if args.pez is None else args.pez, 0, 1)),
            "shoulders": float(np.clip(args.shoulders, 0.5, 1.2)),
            "headphones": not args.no_headphones, "hairline": args.hairline,
-           "forehead": float(np.clip(args.forehead, 0, 1))}
+           "forehead": float(np.clip(args.forehead, 0, 1)), "teeth": args.teeth}
     cfg.update(look(args, style))
     if args.female:
         # a preset bundle of feminine cues; each underlying switch can still be overridden alongside it
