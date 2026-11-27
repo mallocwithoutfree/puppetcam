@@ -71,6 +71,7 @@ class GpuPuppet:
         v[1] = (*st.get("gaze", (0.0, 0.0)), *st.get("brow", (0.0, 0.0)))
         v[2] = (st.get("corners", 0.0), cfg["pez"], cfg["long"], mode)
         v[3, :3] = _lin(cfg["skin"])
+        v[3, 3] = 1.0 if cfg.get("teeth") else 0.0        # upper + lower teeth (reuse M_BUTTON in head pass)
         v[4] = (*_lin(cfg["hair"]), 1.0 if cfg["beard_on"] else 0.0)
         v[5] = (*_lin(cfg["beard"]), 1.0 if cfg["glasses"] else 0.0)
         v[6] = (*_lin(cfg["shirt"]), 1.0 if cfg["headphones"] else 0.0)

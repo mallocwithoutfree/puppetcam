@@ -39,6 +39,7 @@ var<private> g_bust: f32;       // chest shaping on the torso sprite
 var<private> g_vulcan: f32;     // pointed ears + upswept brows (the bowl hairline is set in Python)
 var<private> g_hat: f32;        // wizard hat: tall brimmed felt cone (reuses M_SHIRT in the head pass)
 var<private> g_longbeard: f32;  // long flowing beard hanging below the chin (wizard preset)
+var<private> g_teeth: f32;      // upper + lower rows of teeth (enamel, reuses M_BUTTON in the head pass)
 
 const M_SKIN = 0.0;
 const M_HAIR = 1.0;
@@ -410,11 +411,25 @@ fn wizardHat(q: vec3f) -> f32 {
     return d - 0.006 * vnoise(q * vec3f(45.0, 45.0, 45.0));
 }
 
+// one curved row of teeth: small rounded boxes repeated along x on a dental arch that curves back toward
+// the corners. ymid = row centre, hy = half height. Recessed well behind the lips so a closed mouth hides
+// the whole set; the opening reveals it. Enamel reuses M_BUTTON (off-white, glossy, not felt).
+fn teethRow(p: vec3f, ymid: f32, hy: f32) -> f32 {
+    let cell = 0.028;
+    let lim = 3.0;                                       // 7 teeth across the front of the mouth
+    let cx = clamp(round(p.x / cell), -lim, lim) * cell;
+    let z0 = 0.155 - 0.9 * cx * cx;                      // teeth sit further back toward the corners
+    return sdRoundBox(vec3f(p.x - cx, p.y - ymid, p.z - z0), vec3f(0.010, hy, 0.013), 0.003);
+}
+
 // parts that ride on the upper head (never cut by the hinge)
 fn upperParts(q: vec3f) -> vec2f {
     let ax = vec3f(abs(q.x), q.y, q.z);
     // ping-pong eyes
     var r = vec2f(sdSphere(ax - EYE_C, EYE_R), M_EYE);
+    if (g_teeth > 0.5) {
+        r = U(r, vec2f(teethRow(q, -0.151, 0.015), M_BUTTON));   // upper row hangs from the palate
+    }
     if (g_longhair > 0.5) {
         r = U(r, vec2f(longHair(q), M_HAIR));
     }
@@ -490,6 +505,9 @@ fn lowerParts(q: vec3f) -> vec2f {
     // tongue sunk into the jaw floor, well back from the lip (it read as a disk lolling out when seen
     // from below); hidden inside the head while closed
     r = U(r, vec2f(sdEllipsoid(q - vec3f(0.0, HINGE.y - 0.008, -0.005), vec3f(0.085, 0.03, 0.085)), M_TONGUE));
+    if (g_teeth > 0.5) {
+        r = U(r, vec2f(teethRow(q, -0.181, 0.015), M_BUTTON));   // lower row rides the jaw
+    }
     return r;
 }
 
@@ -804,6 +822,7 @@ fn fs(@builtin(position) fc: vec4f) -> @location(0) vec4f {
     g_vulcan = P.v[11].y;
     g_hat = P.v[11].z;
     g_longbeard = P.v[11].w;
+    g_teeth = P.v[3].w;
     g_closed = P.v[7].y;
     let F = P.v[7].z;
     let fuzz = P.v[7].w;
