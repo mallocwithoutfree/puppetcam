@@ -27,6 +27,7 @@ dependency-checked, not yet run on those platforms; see [Windows](#windows) and 
 - [Troubleshooting](#troubleshooting)
 - [Windows](#windows)
 - [Linux](#linux)
+- [License](#license)
 
 ## Setup
 
@@ -380,3 +381,14 @@ virtual-camera output itself).
 
 The puppet is an original character. It uses generic puppet construction (felt, a hinged mouth,
 ping-pong-ball eyes), not a copy of any existing puppet character or branded product.
+
+## License
+
+Copyright (C) 2026 The Puppetcam Authors.
+
+Puppetcam is free software. You can redistribute it and modify it under the terms of version 2 of
+the GNU General Public License, as published by the Free Software Foundation.
+
+It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. The full text is in
+[LICENSE](LICENSE).
